@@ -1,4 +1,4 @@
-ccc: ccc.c
+ccc: ccc.c vector.c
 
 test: ccc
 	./test.sh

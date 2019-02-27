@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "vector.h"
 
 enum {
   TK_NUM = 256,
@@ -25,11 +26,22 @@ typedef struct {
   int val;
 } Node;
 
-Token tokens[100];
+Vector *tokens;
 int pos = 0;
 
+void push_token(int ty, char *input, int val) {
+  Token *token = malloc(sizeof(Token));
+  token->ty = ty;
+  token->val = val;
+  token->input = input;
+  vec_push(tokens, token);
+}
+
+Token *get_token(int pos) {
+  return tokens->data[pos];
+}
+
 void tokenize(char *p) {
-  int i = 0;
   while (*p) {
     if (isspace(*p)) {
       p++;
@@ -37,26 +49,20 @@ void tokenize(char *p) {
     }
 
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
-      tokens[i].ty = *p;
-      tokens[i].input = p;
-      i++;
+      push_token(*p, p, 0);
       p++;
       continue;
     }
 
     if (isdigit(*p)) {
-      tokens[i].ty = TK_NUM;
-      tokens[i].input = p;
-      tokens[i].val = strtol(p, &p, 10);
-      i++;
+      push_token(TK_NUM, p, strtol(p, &p, 10));
       continue;
     }
     fprintf(stderr, "Tokenize failed: %s\n", p);
     exit(1);
   }
 
-  tokens[i].ty = TK_EOF;
-  tokens[i].input = p;
+  push_token(TK_EOF, p, 0);
 }
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
@@ -75,7 +81,7 @@ Node *new_node_num(int val) {
 }
 
 int consume(int ty) {
-  if (tokens[pos].ty != ty)
+  if (get_token(pos)->ty != ty)
     return 0;
   pos++;
   return 1;
@@ -114,14 +120,14 @@ Node *term() {
   if (consume('(')) {
     Node *node = add();
     if (!consume(')'))
-      error("unclosed parenthesis: %s", tokens[pos].input);
+      error("unclosed parenthesis: %s", get_token(pos)->input);
     return node;
   }
 
-  if (tokens[pos].ty == TK_NUM)
-    return new_node_num(tokens[pos++].val);
+  if (get_token(pos)->ty == TK_NUM)
+    return new_node_num(get_token(pos++)->val);
 
-  error("expects number or parenthesis but found: %s", tokens[pos].input);
+  error("expects number or parenthesis but found: %s", get_token(pos)->input);
 }
 
 void gen(Node *node) {
@@ -156,7 +162,7 @@ void gen(Node *node) {
 }
 
 void error(int i) {
-  fprintf(stderr, "Unexpected token: %s\n", tokens[i].input);
+  fprintf(stderr, "Unexpected token: %s\n", get_token(i)->input);
   exit(1);
 }
 
@@ -165,6 +171,8 @@ int main(int argc, char **argv) {
     fprintf(stderr, "invalid number of arguments!\n");
     return 1;
   }
+
+  tokens = new_vector();
 
   tokenize(argv[1]);
   Node *node = add();
