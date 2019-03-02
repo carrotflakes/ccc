@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "map.h"
 #include "ccc.h"
 
 void error(int i) {
@@ -64,7 +65,36 @@ void gen(Node *node) {
   printf("  push rax\n");
 }
 
+void collect_vars(Map *vars, Node *node) {
+  switch (node->ty) {
+  case ND_NUM:
+    return;
+  case ND_IDENT:
+    if (map_get(vars, node->name) == NULL) {
+      int *v = malloc(sizeof(int));
+      *v = map_size(vars);
+      map_put(vars, node->name, v);
+    }
+    return;
+  case '=':
+  case '+':
+  case '-':
+  case '*':
+  case '/':
+    collect_vars(vars, node->lhs);
+    collect_vars(vars, node->rhs);
+    return;
+  }
+}
+
 void gen_all(Node **nodes) {
+  Map *vars = new_map();
+
+  for (int i = 0; nodes[i]; i++) {
+    collect_vars(vars, nodes[i]);
+  }
+  fprintf(stderr, "vars: %d\n", map_size(vars));
+
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");
   printf("main:\n");

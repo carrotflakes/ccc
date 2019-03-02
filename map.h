@@ -10,6 +10,7 @@ typedef struct {
 
 Map *new_map();
 void map_put(Map *map, char *key, void *val);
+void map_put_safe(Map *map, char *key, void *val);
 void *map_get(Map *map, char *key);
 int map_size(Map *map);
 

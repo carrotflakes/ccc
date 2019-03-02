@@ -46,9 +46,16 @@ void tokenize(char *p) {
     }
 
     if ('a' <= *p && *p <= 'z') {
-      char *ident = calloc(sizeof(char) * 2);
-      push_token_ident(p, strncpy(ident, p, 1));
-      p++;
+      int len = 0;
+      while (('a' <= p[len] && p[len] <= 'z') ||
+             ('0' <= p[len] && p[len] <= '9') ||
+             p[len] == '_')
+        len++;
+      char *ident = malloc(sizeof(char) * len + 1);
+      strncpy(ident, p, len);
+      ident[len] = 0;
+      push_token_ident(p, ident);
+      p += len;
       continue;
     }
 
