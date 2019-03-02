@@ -28,4 +28,9 @@ try 3 "a=5;z=2;a-z;"
 try 3 "a=2+3;z=8/4;a-z;"
 try 3 "abc=1;i_0=2;abc+i_0;"
 
+try 1 "1==1;"
+try 1 "1+(0==1);"
+try 1 "a=1;b=2;a+a==b;"
+try 1 "1!=2;"
+
 echo OK

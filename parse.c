@@ -38,6 +38,17 @@ void tokenize(char *p) {
       continue;
     }
 
+    if (strncmp(p, "==", 2) == 0) {
+      push_token(TK_EQ, p, 0);
+      p += 2;
+      continue;
+    }
+    if (strncmp(p, "!=", 2) == 0) {
+      push_token(TK_NEQ, p, 0);
+      p += 2;
+      continue;
+    }
+
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
         *p == '(' || *p == ')' || *p == '='|| *p == ';') {
       push_token(*p, p, 0);
@@ -102,6 +113,7 @@ int consume(int ty) {
 
 Node *stmt();
 Node *assign();
+Node *eq();
 Node *add();
 Node *mul();
 Node *term();
@@ -115,10 +127,21 @@ Node *stmt() {
 }
 
 Node *assign() {
-  Node *node = add();
+  Node *node = eq();
 
   if (consume('='))
     return new_node('=', node, assign());
+  else
+    return node;
+}
+
+Node *eq() {
+  Node *node = add();
+
+  if (consume(TK_EQ))
+    node = new_node(TK_EQ, node, add());
+  else if (consume(TK_NEQ))
+    node = new_node(TK_NEQ, node, add());
   else
     return node;
 }
@@ -151,7 +174,7 @@ Node *mul() {
 
 Node *term() {
   if (consume('(')) {
-    Node *node = add();
+    Node *node = eq();
     if (!consume(')'))
       error("unclosed parenthesis: %s", get_token(pos)->input);
     return node;

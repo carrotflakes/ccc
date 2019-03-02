@@ -47,6 +47,16 @@ void gen(Node *node) {
   printf("  pop rax\n");
 
   switch (node->ty) {
+  case TK_EQ:
+    printf("  cmp rdi, rax\n");
+    printf("  sete al\n");
+    printf("  movzb rax, al\n");
+    break;
+  case TK_NEQ:
+    printf("  cmp rdi, rax\n");
+    printf("  setne al\n");
+    printf("  movzb rax, al\n");
+    break;
   case '+':
     printf("  add rax, rdi\n");
     break;
@@ -76,6 +86,8 @@ void collect_vars(Map *vars, Node *node) {
       map_put(vars, node->name, v);
     }
     return;
+  case TK_EQ:
+  case TK_NEQ:
   case '=':
   case '+':
   case '-':
