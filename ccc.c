@@ -6,6 +6,7 @@
 
 enum {
   TK_NUM = 256,
+  TK_IDENT,
   TK_EOF,
 };
 
@@ -17,13 +18,15 @@ typedef struct {
 
 enum {
   ND_NUM = 256,
+  ND_IDENT,
 };
 
-typedef struct {
+typedef struct Node {
   int ty;
   struct Node *lhs;
   struct Node *rhs;
   int val;
+  char name;
 } Node;
 
 Vector *tokens;
@@ -38,6 +41,8 @@ void push_token(int ty, char *input, int val) {
 }
 
 Token *get_token(int pos) {
+  if (tokens->len <= pos)
+    return NULL;
   return tokens->data[pos];
 }
 
@@ -48,8 +53,14 @@ void tokenize(char *p) {
       continue;
     }
 
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == ';') {
       push_token(*p, p, 0);
+      p++;
+      continue;
+    }
+
+    if ('a' <= *p && *p <= 'z') {
+      push_token(TK_IDENT, p, 0);
       p++;
       continue;
     }
@@ -76,19 +87,47 @@ Node *new_node(int ty, Node *lhs, Node *rhs) {
 Node *new_node_num(int val) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_NUM;
-  node->val =val;
+  node->val = val;
+  return node;
+}
+
+Node *new_node_ident(char name) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_IDENT;
+  node->name = name;
   return node;
 }
 
 int consume(int ty) {
-  if (get_token(pos)->ty != ty)
+  Token *token = get_token(pos);
+  if (token == NULL || token->ty != ty)
     return 0;
   pos++;
   return 1;
 }
 
+Node *stmt();
+Node *assign();
+Node *add();
 Node *mul();
 Node *term();
+
+Node *stmt() {
+  Node *node = assign();
+
+  if (!consume(';'))
+    error("expects ';' but found: %s", get_token(pos)->input);
+  return node;
+}
+
+Node *assign() {
+  Node *node = add();
+
+  if (consume('='))
+    return new_node('=', node, assign());
+  else
+    return node;
+}
 
 Node *add() {
   Node *node = mul();
@@ -126,8 +165,20 @@ Node *term() {
 
   if (get_token(pos)->ty == TK_NUM)
     return new_node_num(get_token(pos++)->val);
+  if (get_token(pos)->ty == TK_IDENT)
+    return new_node_ident(get_token(pos++)->val);
 
   error("expects number or parenthesis but found: %s", get_token(pos)->input);
+}
+
+Node *code[100];
+
+void program() {
+  int i = 0;
+  while (get_token(pos)->ty != TK_EOF) {
+    code[i++] = stmt();
+  }
+  code[i] = NULL;
 }
 
 void gen(Node *node) {
@@ -175,13 +226,13 @@ int main(int argc, char **argv) {
   tokens = new_vector();
 
   tokenize(argv[1]);
-  Node *node = add();
+  program();
 
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");
   printf("main:\n");
 
-  gen(node);
+  gen(code[0]);
 
   printf("  pop rax\n");
   printf("  ret\n");
