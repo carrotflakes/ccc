@@ -1,4 +1,4 @@
-ccc: ccc.c vector.c
+ccc: main.c vector.c parse.c codegen.c
 
 test: ccc
 	./test.sh

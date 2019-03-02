@@ -1,33 +1,7 @@
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "vector.h"
-
-enum {
-  TK_NUM = 256,
-  TK_IDENT,
-  TK_EOF,
-};
-
-typedef struct {
-  int ty;
-  int val;
-  char *input;
-} Token;
-
-enum {
-  ND_NUM = 256,
-  ND_IDENT,
-};
-
-typedef struct Node {
-  int ty;
-  struct Node *lhs;
-  struct Node *rhs;
-  int val;
-  char name;
-} Node;
+#include "ccc.h"
 
 Vector *tokens;
 int pos = 0;
@@ -47,6 +21,8 @@ Token *get_token(int pos) {
 }
 
 void tokenize(char *p) {
+  tokens = new_vector();
+
   while (*p) {
     if (isspace(*p)) {
       p++;
@@ -172,106 +148,12 @@ Node *term() {
   error("expects number or parenthesis but found: %s", get_token(pos)->input);
 }
 
-Node *code[100];
-
-void program() {
+Node **program() {
+  Node **code = malloc(sizeof(Node *) * 100);
   int i = 0;
   while (get_token(pos)->ty != TK_EOF) {
     code[i++] = stmt();
   }
   code[i] = NULL;
-}
-
-void gen_lval(Node *node) {
-  if (node->ty != ND_IDENT)
-    error("invalid lvalue");
-
-  int offset = ('z' - node->name + 1) * 8;
-  printf("  mov rax, rbp\n");
-  printf("  sub rax, %d\n", offset);
-  printf("  push rax\n");
-}
-
-void gen(Node *node) {
-  switch (node->ty) {
-  case ND_NUM:
-    printf("  push %d\n", node->val);
-    return;
-  case ND_IDENT:
-    gen_lval(node);
-    printf("  pop rax\n");
-    printf("  mov rax, [rax]\n");
-    printf("  push rax\n");
-    return;
-  case '=':
-    gen_lval(node->lhs);
-    gen(node->rhs);
-
-    printf("  pop rdi\n");
-    printf("  pop rax\n");
-    printf("  mov [rax], rdi\n");
-    printf("  push rdi\n");
-    return;
-  }
-
-  gen(node->lhs);
-  gen(node->rhs);
-
-  printf("  pop rdi\n");
-  printf("  pop rax\n");
-
-  switch (node->ty) {
-  case '+':
-    printf("  add rax, rdi\n");
-    break;
-  case '-':
-    printf("  sub rax, rdi\n");
-    break;
-  case '*':
-    printf("  mul rdi\n");
-    break;
-  case '/':
-    printf("  mov rdx, 0\n");
-    printf("  div rdi\n");
-    break;
-  }
-
-  printf("  push rax\n");
-}
-
-void error(int i) {
-  fprintf(stderr, "Unexpected token: %s\n", get_token(i)->input);
-  exit(1);
-}
-
-int main(int argc, char **argv) {
-  if (argc != 2) {
-    fprintf(stderr, "invalid number of arguments!\n");
-    return 1;
-  }
-
-  tokens = new_vector();
-
-  tokenize(argv[1]);
-  program();
-
-  printf(".intel_syntax noprefix\n");
-  printf(".global main\n");
-  printf("main:\n");
-
-  // prologue
-  printf("  push rbp\n");
-  printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
-
-  for (int i = 0; code[i]; i++) {
-    gen(code[i]);
-    printf("  pop rax\n");
-  }
-
-  // epilogue
-  printf("  mov rsp, rbp\n");
-  printf("  pop rbp\n");
-  printf("  ret\n");
-  return 0;
+  return code;
 }
