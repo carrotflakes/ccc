@@ -11,7 +11,7 @@ void gen_lval(Node *node) {
   if (node->ty != ND_IDENT)
     error("invalid lvalue");
 
-  int offset = ('z' - node->name + 1) * 8;
+  int offset = ('z' - node->name[0] + 1) * 8;
   printf("  mov rax, rbp\n");
   printf("  sub rax, %d\n", offset);
   printf("  push rax\n");
@@ -62,4 +62,25 @@ void gen(Node *node) {
   }
 
   printf("  push rax\n");
+}
+
+void gen_all(Node **nodes) {
+  printf(".intel_syntax noprefix\n");
+  printf(".global main\n");
+  printf("main:\n");
+
+  // prologue
+  printf("  push rbp\n");
+  printf("  mov rbp, rsp\n");
+  printf("  sub rsp, 208\n");
+
+  for (int i = 0; nodes[i]; i++) {
+    gen(nodes[i]);
+    printf("  pop rax\n");
+  }
+
+  // epilogue
+  printf("  mov rsp, rbp\n");
+  printf("  pop rbp\n");
+  printf("  ret\n");
 }

@@ -10,6 +10,7 @@ enum {
 typedef struct {
   int ty;
   int val;
+  char *ident;
   char *input;
 } Token;
 
@@ -23,13 +24,13 @@ typedef struct Node {
   struct Node *lhs;
   struct Node *rhs;
   int val;
-  char name;
+  char *name;
 } Node;
 
 Token *get_token(int pos);
 void tokenize(char *p);
 Node **program();
 
-void gen(Node *node);
+void gen_all(Node **node);
 
 #endif

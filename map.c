@@ -12,3 +12,7 @@ void *map_get(Map *map, char *key) {
       return map->vals->data[i];
   return NULL;
 }
+
+int map_size(Map *map) {
+  return map->keys->len;
+}

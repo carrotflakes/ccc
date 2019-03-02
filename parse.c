@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "vector.h"
 #include "ccc.h"
 
@@ -10,6 +11,14 @@ void push_token(int ty, char *input, int val) {
   Token *token = malloc(sizeof(Token));
   token->ty = ty;
   token->val = val;
+  token->input = input;
+  vec_push(tokens, token);
+}
+
+void push_token_ident(char *input, char *ident) {
+  Token *token = malloc(sizeof(Token));
+  token->ty = TK_IDENT;
+  token->ident = ident;
   token->input = input;
   vec_push(tokens, token);
 }
@@ -37,7 +46,8 @@ void tokenize(char *p) {
     }
 
     if ('a' <= *p && *p <= 'z') {
-      push_token(TK_IDENT, p, *p);
+      char *ident = calloc(sizeof(char) * 2);
+      push_token_ident(p, strncpy(ident, p, 1));
       p++;
       continue;
     }
@@ -68,7 +78,7 @@ Node *new_node_num(int val) {
   return node;
 }
 
-Node *new_node_ident(char name) {
+Node *new_node_ident(char *name) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
   node->name = name;
@@ -143,7 +153,7 @@ Node *term() {
   if (get_token(pos)->ty == TK_NUM)
     return new_node_num(get_token(pos++)->val);
   if (get_token(pos)->ty == TK_IDENT)
-    return new_node_ident(get_token(pos++)->val);
+    return new_node_ident(get_token(pos++)->ident);
 
   error("expects number or parenthesis but found: %s", get_token(pos)->input);
 }
