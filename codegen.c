@@ -108,6 +108,10 @@ void collect_vars(Map *vars, Node *node) {
     return;
   case ND_EQ:
   case ND_NEQ:
+  case ND_GT:
+  case ND_GE:
+  case ND_LT:
+  case ND_LE:
   case '=':
   case '+':
   case '-':
