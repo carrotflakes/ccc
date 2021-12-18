@@ -48,9 +48,20 @@ void tokenize(char *p) {
       p += 2;
       continue;
     }
+    if (strncmp(p, ">=", 2) == 0) {
+      push_token(TK_GE, p, 0);
+      p += 2;
+      continue;
+    }
+    if (strncmp(p, "<=", 2) == 0) {
+      push_token(TK_LE, p, 0);
+      p += 2;
+      continue;
+    }
 
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
-        *p == '(' || *p == ')' || *p == '='|| *p == ';') {
+        *p == '(' || *p == ')' || *p == '='|| *p == ';' ||
+        *p == '>' || *p == '<') {
       push_token(*p, p, 0);
       p++;
       continue;
@@ -114,6 +125,7 @@ int consume(int ty) {
 Node *stmt();
 Node *assign();
 Node *eq();
+Node *rel();
 Node *add();
 Node *mul();
 Node *unary();
@@ -137,12 +149,27 @@ Node *assign() {
 }
 
 Node *eq() {
-  Node *node = add();
+  Node *node = rel();
 
   if (consume(TK_EQ))
-    node = new_node(TK_EQ, node, add());
+    node = new_node(ND_EQ, node, rel());
   else if (consume(TK_NEQ))
-    node = new_node(TK_NEQ, node, add());
+    node = new_node(ND_NEQ, node, rel());
+  else
+    return node;
+}
+
+Node *rel() {
+  Node *node = add();
+
+  if (consume('<'))
+    node = new_node(ND_LT, node, add());
+  else if (consume('>'))
+    node = new_node(ND_GT, node, add());
+  else if (consume(TK_LE))
+    node = new_node(ND_LE, node, add());
+  else if (consume(TK_GE))
+    node = new_node(ND_GE, node, add());
   else
     return node;
 }
