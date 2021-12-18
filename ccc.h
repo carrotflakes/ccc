@@ -9,6 +9,12 @@ enum {
   TK_EOF,
   TK_GE,
   TK_LE,
+
+  TK_IF,
+  TK_ELSE,
+  TK_WHILE,
+  TK_FOR,
+  TK_RETURN,
 };
 
 typedef struct {
@@ -28,14 +34,26 @@ enum {
   ND_GE,
   ND_LT,
   ND_LE,
+  ND_IF,
+};
+
+union NodeBody {
+  struct Ope {
+    struct Node *lhs;
+    struct Node *rhs;
+  } ope;
+  struct If {
+    struct Node *cond;
+    struct Node *then;
+    struct Node *els;
+  } if_stmt;
+  int val;
+  char *ident;
 };
 
 typedef struct Node {
   int ty;
-  struct Node *lhs;
-  struct Node *rhs;
-  int val;
-  char *name;
+  union NodeBody body;
 } Node;
 
 Token *get_token(int pos);

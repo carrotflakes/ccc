@@ -45,4 +45,9 @@ try 0 "5 < 5;"
 try 1 "5 <= 5;"
 try 0 "6 <= 5;"
 
+try 123 "{123}"
+try 2 "if (1 == 1) {2}"
+try 2 "if (1 == 1) {2} else {3}"
+try 3 "if (1 == 2) {2} else {3}"
+
 echo OK

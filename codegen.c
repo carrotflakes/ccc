@@ -12,16 +12,18 @@ void gen_lval(Node *node) {
   if (node->ty != ND_IDENT)
     error("invalid lvalue");
 
-  int offset = ('z' - node->name[0] + 1) * 8;
+  int offset = ('z' - node->body.ident[0] + 1) * 8;
   printf("  mov rax, rbp\n");
   printf("  sub rax, %d\n", offset);
   printf("  push rax\n");
 }
 
+int label_index = 0;
+
 void gen(Node *node) {
   switch (node->ty) {
   case ND_NUM:
-    printf("  push %d\n", node->val);
+    printf("  push %d\n", node->body.val);
     return;
   case ND_IDENT:
     gen_lval(node);
@@ -30,18 +32,39 @@ void gen(Node *node) {
     printf("  push rax\n");
     return;
   case '=':
-    gen_lval(node->lhs);
-    gen(node->rhs);
+    gen_lval(node->body.ope.lhs);
+    gen(node->body.ope.rhs);
 
     printf("  pop rdi\n");
     printf("  pop rax\n");
     printf("  mov [rax], rdi\n");
     printf("  push rdi\n");
     return;
+  case ND_IF:
+    gen(node->body.if_stmt.cond);
+    printf("  pop rax\n");
+    printf("  cmp rax, 0\n");
+
+    if (node->body.if_stmt.els) {
+      int lelse_index = label_index++;
+      int lend_index = label_index++;
+      printf("  je .Lelse%d\n", lelse_index);
+      gen(node->body.if_stmt.then);
+      printf("  jmp .Lend%d\n", lend_index);
+      printf(".Lelse%d:\n", lelse_index);
+      gen(node->body.if_stmt.els);
+      printf(".Lend%d:\n", lend_index);
+    } else {
+      int lend_index = label_index++;
+      printf("  je .Lend%d\n", lend_index);
+      gen(node->body.if_stmt.then);
+      printf(".Lend%d:\n", lend_index);
+    }
+    return;
   }
 
-  gen(node->lhs);
-  gen(node->rhs);
+  gen(node->body.ope.lhs);
+  gen(node->body.ope.rhs);
 
   printf("  pop rdi\n");
   printf("  pop rax\n");
@@ -90,6 +113,9 @@ void gen(Node *node) {
     printf("  mov rdx, 0\n");
     printf("  div rdi\n");
     break;
+  default:
+    fprintf(stderr, "invalid node type: %d\n", node->ty);
+    exit(1);
   }
 
   printf("  push rax\n");
@@ -100,10 +126,10 @@ void collect_vars(Map *vars, Node *node) {
   case ND_NUM:
     return;
   case ND_IDENT:
-    if (map_get(vars, node->name) == NULL) {
+    if (map_get(vars, node->body.ident) == NULL) {
       int *v = malloc(sizeof(int));
       *v = map_size(vars);
-      map_put(vars, node->name, v);
+      map_put(vars, node->body.ident, v);
     }
     return;
   case ND_EQ:
@@ -117,9 +143,18 @@ void collect_vars(Map *vars, Node *node) {
   case '-':
   case '*':
   case '/':
-    collect_vars(vars, node->lhs);
-    collect_vars(vars, node->rhs);
+    collect_vars(vars, node->body.ope.lhs);
+    collect_vars(vars, node->body.ope.rhs);
     return;
+  case ND_IF:
+    collect_vars(vars, node->body.if_stmt.cond);
+    collect_vars(vars, node->body.if_stmt.then);
+    if (node->body.if_stmt.els)
+      collect_vars(vars, node->body.if_stmt.els);
+    return;
+  default:
+    fprintf(stderr, "invalid node type: %d\n", node->ty);
+    exit(1);
   }
 }
 

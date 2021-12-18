@@ -61,7 +61,7 @@ void tokenize(char *p) {
 
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' ||
         *p == '(' || *p == ')' || *p == '='|| *p == ';' ||
-        *p == '>' || *p == '<') {
+        *p == '>' || *p == '<' || *p == '{' || *p == '}') {
       push_token(*p, p, 0);
       p++;
       continue;
@@ -73,10 +73,24 @@ void tokenize(char *p) {
              ('0' <= p[len] && p[len] <= '9') ||
              p[len] == '_')
         len++;
-      char *ident = malloc(sizeof(char) * len + 1);
-      strncpy(ident, p, len);
-      ident[len] = 0;
-      push_token_ident(p, ident);
+      
+      if (strncmp(p, "if", 2) == 0) {
+        push_token(TK_IF, p, 0);
+      } else if (strncmp(p, "else", 4) == 0) {
+        push_token(TK_ELSE, p, 0);
+      } else if (strncmp(p, "while", 5) == 0) {
+        push_token(TK_WHILE, p, 0);
+      } else if (strncmp(p, "for", 3) == 0) {
+        push_token(TK_FOR, p, 0);
+      } else if (strncmp(p, "return", 6) == 0) {
+        push_token(TK_RETURN, p, 0);
+      } else {
+        char *ident = malloc(sizeof(char) * len + 1);
+        strncpy(ident, p, len);
+        ident[len] = 0;
+        push_token_ident(p, ident);
+      }
+
       p += len;
       continue;
     }
@@ -95,22 +109,31 @@ void tokenize(char *p) {
 Node *new_node(int ty, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
   node->ty = ty;
-  node->lhs = lhs;
-  node->rhs = rhs;
+  node->body.ope.lhs = lhs;
+  node->body.ope.rhs = rhs;
+  return node;
+}
+
+Node *new_node_if(Node *cond, Node *then, Node *els) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_IF;
+  node->body.if_stmt.cond = cond;
+  node->body.if_stmt.then = then;
+  node->body.if_stmt.els = els;
   return node;
 }
 
 Node *new_node_num(int val) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_NUM;
-  node->val = val;
+  node->body.val = val;
   return node;
 }
 
 Node *new_node_ident(char *name) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
-  node->name = name;
+  node->body.ident = name;
   return node;
 }
 
@@ -132,6 +155,23 @@ Node *unary();
 Node *term();
 
 Node *stmt() {
+  if (consume('{')) {
+    Node *node = assign();
+
+    if (!consume('}'))
+      error("expects '}' but found: %s", get_token(pos)->input);
+    return node;
+  }
+
+  if (consume(TK_IF)) {
+    Node *cond = assign();
+    Node *then = stmt();
+    Node *els = NULL;
+    if (consume(TK_ELSE))
+      els = stmt();
+    return new_node_if(cond, then, els);
+  }
+
   Node *node = assign();
 
   if (!consume(';'))
