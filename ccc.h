@@ -35,6 +35,7 @@ enum {
   ND_LT,
   ND_LE,
   ND_IF,
+  ND_RETURN,
 };
 
 union NodeBody {

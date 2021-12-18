@@ -163,6 +163,14 @@ Node *stmt() {
     return node;
   }
 
+  if (consume(TK_RETURN)) {
+    Node *node = assign();
+
+    if (!consume(';'))
+      error("expects ';' but found: %s", get_token(pos)->input);
+    return new_node(ND_RETURN, node, NULL);
+  }
+
   if (consume(TK_IF)) {
     Node *cond = assign();
     Node *then = stmt();

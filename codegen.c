@@ -61,6 +61,9 @@ void gen(Node *node) {
       printf(".Lend%d:\n", lend_index);
     }
     return;
+  case ND_RETURN:
+    gen(node->body.ope.lhs);
+    return;
   }
 
   gen(node->body.ope.lhs);
@@ -151,6 +154,9 @@ void collect_vars(Map *vars, Node *node) {
     collect_vars(vars, node->body.if_stmt.then);
     if (node->body.if_stmt.els)
       collect_vars(vars, node->body.if_stmt.els);
+    return;
+  case ND_RETURN:
+    collect_vars(vars, node->body.ope.lhs);
     return;
   default:
     fprintf(stderr, "invalid node type: %d\n", node->ty);

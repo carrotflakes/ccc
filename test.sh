@@ -50,4 +50,6 @@ try 2 "if (1 == 1) {2}"
 try 2 "if (1 == 1) {2} else {3}"
 try 3 "if (1 == 2) {2} else {3}"
 
+try 123 "return 123;"
+
 echo OK
