@@ -61,8 +61,29 @@ void gen(Node *node) {
       printf(".Lend%d:\n", lend_index);
     }
     return;
+  case ND_WHILE:
+    {
+    int begin_index = label_index++;
+    int end_index = label_index++;
+    printf(".Lbegin%d:\n", begin_index);
+    gen(node->body.ope.lhs);
+    printf("  pop rax\n");
+    printf("  cmp rax, 0\n");
+    printf("  je .Lend%d\n", end_index);
+    gen(node->body.ope.rhs);
+    printf("  jmp .Lbegin%d\n", begin_index);
+    printf(".Lend%d:\n", end_index);
+    }
+    return;
   case ND_RETURN:
     gen(node->body.ope.lhs);
+    return;
+  case ND_STMTS:
+    for (int i = 0; node->body.stmts[i]; i++) {
+      gen(node->body.stmts[i]);
+      printf("  pop rax\n");
+    }
+    printf("  push rax\n");
     return;
   }
 
@@ -141,6 +162,7 @@ void collect_vars(Map *vars, Node *node) {
   case ND_GE:
   case ND_LT:
   case ND_LE:
+  case ND_WHILE:
   case '=':
   case '+':
   case '-':
@@ -157,6 +179,11 @@ void collect_vars(Map *vars, Node *node) {
     return;
   case ND_RETURN:
     collect_vars(vars, node->body.ope.lhs);
+    return;
+  case ND_STMTS:
+    for (int i = 0; node->body.stmts[i]; i++) {
+      collect_vars(vars, node->body.stmts[i]);
+    }
     return;
   default:
     fprintf(stderr, "invalid node type: %d\n", node->ty);

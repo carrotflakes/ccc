@@ -35,7 +35,10 @@ enum {
   ND_LT,
   ND_LE,
   ND_IF,
+  ND_WHILE,
+  ND_FOR,
   ND_RETURN,
+  ND_STMTS,
 };
 
 union NodeBody {
@@ -48,6 +51,7 @@ union NodeBody {
     struct Node *then;
     struct Node *els;
   } if_stmt;
+  struct Node **stmts;
   int val;
   char *ident;
 };

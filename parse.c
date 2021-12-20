@@ -123,6 +123,13 @@ Node *new_node_if(Node *cond, Node *then, Node *els) {
   return node;
 }
 
+Node *new_node_stmts(Node **stmts) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_STMTS;
+  node->body.stmts = stmts;
+  return node;
+}
+
 Node *new_node_num(int val) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_NUM;
@@ -145,6 +152,7 @@ int consume(int ty) {
   return 1;
 }
 
+Node *stmts();
 Node *stmt();
 Node *assign();
 Node *eq();
@@ -154,9 +162,19 @@ Node *mul();
 Node *unary();
 Node *term();
 
+Node *stmts() {
+  Node **stmts = malloc(sizeof(Node *) * 100);
+  int i = 0;
+  while (get_token(pos)->ty != TK_EOF && get_token(pos)->ty != '}') {
+    stmts[i++] = stmt();
+  }
+  stmts[i] = NULL;
+  return new_node_stmts(stmts);
+}
+
 Node *stmt() {
   if (consume('{')) {
-    Node *node = assign();
+    Node *node = stmts();
 
     if (!consume('}'))
       error("expects '}' but found: %s", get_token(pos)->input);
@@ -178,6 +196,12 @@ Node *stmt() {
     if (consume(TK_ELSE))
       els = stmt();
     return new_node_if(cond, then, els);
+  }
+  
+  if (consume(TK_WHILE)) {
+    Node *cond = assign();
+    Node *body = stmt();
+    return new_node(ND_WHILE, cond, body);
   }
 
   Node *node = assign();

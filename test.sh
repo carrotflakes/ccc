@@ -27,6 +27,7 @@ try 1 "a=1;a;"
 try 3 "a=5;z=2;a-z;"
 try 3 "a=2+3;z=8/4;a-z;"
 try 3 "abc=1;i_0=2;abc+i_0;"
+try 2 "a=1;a=2;a;"
 
 try 1 "1==1;"
 try 1 "1+(0==1);"
@@ -45,11 +46,15 @@ try 0 "5 < 5;"
 try 1 "5 <= 5;"
 try 0 "6 <= 5;"
 
-try 123 "{123}"
-try 2 "if (1 == 1) {2}"
-try 2 "if (1 == 1) {2} else {3}"
-try 3 "if (1 == 2) {2} else {3}"
+try 123 "{123;}"
+try 2 "if (1 == 1) {2;}"
+try 2 "if (1 == 1) {2;} else {3;}"
+try 3 "if (1 == 2) {2;} else {3;}"
 
 try 123 "return 123;"
+
+try 12 "while (1==0) {1==1;}12;"
+try 12 "while (1==0) {a=2;}12;"
+try 15 "a=5;b=0;while (a>0) {b=b+a;a=a-1;}b;"
 
 echo OK
